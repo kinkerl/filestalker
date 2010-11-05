@@ -1,0 +1,12 @@
+#smb folderstalker
+
+[server]
+hostname = 
+share = 
+username = 
+password = 
+domain = 
+
+[stalk]
+refresh = 300
+needle = folderneedle1, folderneedle2
