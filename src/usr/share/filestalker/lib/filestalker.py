@@ -168,12 +168,17 @@ class Stalker(Thread):
 				continue
 			print "tick"
 			self.cnt = 0
-			files = self.smbstalk.stalk_samba(self.config['stalk']['needle'])
-			
+			try:
+				files = self.smbstalk.stalk_samba(self.config['stalk']['needle'])
+			except:
+				notify('connection error, stopping now')
+				self.stop()
+				continue;
 			difference = list(set(files).difference(set(self.files_found_last_read))) 
 			
 			
 			if difference:
+				notify('i found new files for you, master')
 				self.menu.clean_files()
 				for element in files.keys():
 					self.menu.add_file(element)
@@ -186,6 +191,7 @@ class Stalker(Thread):
 		self.running = False
 		self.indicator.set_menu(self.menu.generate_menu(self.running, self.base, []))
 		self.indicator.set_icon ('filestalker-offline')
+
 		
 	def mark_as_read(self):
 		self.indicator.set_icon ('filestalker-idle')
@@ -209,11 +215,11 @@ class Base:
 		print "toggle"
 		if self.stalker and self.stalker.running:
 			self.stalker.stop()
-			notify('stopping')
+			
 		else:
 			self.stalker = Stalker(self.config, self.indicator, self)
 			self.stalker.start()
-			notify('starting')
+			#notify('starting')
 			
 	def mark_as_read(self, widget = None):
 		self.stalker.mark_as_read()
