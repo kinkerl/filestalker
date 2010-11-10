@@ -178,7 +178,8 @@ class Stalker(Thread):
 			
 			
 			if difference:
-				notify('i found new files for you, master')
+				if self.config['stalk']['notify']:
+					notify('i found new files for you, master')
 				self.menu.clean_files()
 				for element in files.keys():
 					self.menu.add_file(element)
@@ -186,7 +187,7 @@ class Stalker(Thread):
 				self.files_found_last_time = files
 				
 				self.indicator.set_menu(self.menu.generate_menu(self.running, self.base, difference))
-				self.indicator.set_icon ('filestalker-error')
+				self.indicator.set_icon ('filestalker-new')
 	def stop(self):
 		self.running = False
 		self.indicator.set_menu(self.menu.generate_menu(self.running, self.base, []))
@@ -204,6 +205,14 @@ class Base:
 	
 	def __init__(self):
 		self.config = ConfigObj(CONFIGFILE)
+
+		if not self.config['stalk'].has_key('notify'):
+			self.config['stalk']['notify'] = True
+		if type(self.config['stalk']['notify']) is str and self.config['stalk']['notify'].lower()  == 'false':
+			self.config['stalk']['notify'] = False
+		if not type(self.config['stalk']['notify']) is bool:
+			self.config['stalk']['notify'] = True
+
 		self.indicator = appindicator.Indicator ("filestalkersmb", 'filestalker-idle', appindicator.CATEGORY_APPLICATION_STATUS)
 		self.indicator.set_status (appindicator.STATUS_ACTIVE)
 

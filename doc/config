@@ -9,4 +9,5 @@ domain =
 
 [stalk]
 refresh = 300
+notify = true
 needle = folderneedle1, folderneedle2
