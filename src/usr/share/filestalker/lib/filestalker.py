@@ -62,22 +62,23 @@ class Sambastalk:
 				mdirs = c.lsdir(filefolder)
 				for entry in  mdirs:
 					if entry[0][0] != '.' and entry[0]!='Thumbs.db': #ignore those
-						files[entry[0]]=None
+						files[entry[0]]=filefolder
 			return files
 			
 
 class Menu:
 
-	def __init__(self):
+	def __init__(self, base):
+		self.base = base
 		self.clean_files()
 
 	def clean_files(self):
-		self.files = []
+		self.files = {}
 
-	def add_file(self, element):
-		self.files.append(element)
+	def add_file(self, element, path):
+		self.files[element] = path
 
-	def generate_menu(self, running, base, difference):
+	def generate_menu(self, running, difference):
 		menu = gtk.Menu()
 		
 		if running:
@@ -88,7 +89,7 @@ class Menu:
 			
 			menuItemStatusToggle = gtk.MenuItem('Stop')
 			#menuItem.set_sensitive(False)
-			menuItemStatusToggle.connect('activate',base.toggleme)
+			menuItemStatusToggle.connect('activate',self.base.toggleme)
 			menuItemStatusToggle.show()
 			menu.append(menuItemStatusToggle)
 		else:
@@ -99,7 +100,7 @@ class Menu:
 			
 			menuItemStatusToggle = gtk.MenuItem('Start')
 			#menuItem.set_sensitive(False)
-			menuItemStatusToggle.connect('activate',base.toggleme)
+			menuItemStatusToggle.connect('activate', self.base.toggleme)
 			menuItemStatusToggle.show()
 			menu.append(menuItemStatusToggle)
 		
@@ -109,7 +110,7 @@ class Menu:
 		
 		menuItemStatusToggle = gtk.MenuItem('mark as read')
 		#menuItem.set_sensitive(False)
-		menuItemStatusToggle.connect('activate',base.mark_as_read)
+		menuItemStatusToggle.connect('activate', self.base.mark_as_read)
 		menuItemStatusToggle.show()
 		menu.append(menuItemStatusToggle)
 		
@@ -119,13 +120,14 @@ class Menu:
 		
 		
 		if self.files:
-			for element in self.files :
+			for element in self.files.keys() :
 				menuItemStatus = gtk.MenuItem(element)
 				if element in difference:
 					menuItemStatus.set_sensitive(True)
 				else:
 					menuItemStatus.set_sensitive(False)
 				menuItemStatus.show()
+				menuItemStatus.connect('activate',self.openfolder)
 				menu.append(menuItemStatus)
 		else:
 			menuItemStatusToggle = gtk.MenuItem('--no files found--')
@@ -137,16 +139,18 @@ class Menu:
 		return menu
 
 
+	def openfolder(self, widget = None):
+		self.base.openfolder(self.files[widget.get_children()[0].get_label()])
 
 class Stalker(Thread):
 
 	def __init__(self, config, indicator, base):
 		Thread.__init__(self)
 				
-		self.files_found_last_time = []
-		self.files_found_last_read = []
+		self.files_found_last_time = {}
+		self.files_found_last_read = {}
 		self.config = config
-		self.menu = Menu()
+		self.menu = Menu(base)
 		self.base = base
 				
 		
@@ -160,7 +164,7 @@ class Stalker(Thread):
 		
 	def run (self):
 		print "start"
-		self.indicator.set_menu(self.menu.generate_menu(self.running, self.base, []))
+		self.indicator.set_menu(self.menu.generate_menu(self.running, []))
 		while self.running:
 			time.sleep(1)
 			if self.cnt < int(self.config['stalk']['refresh']):
@@ -174,7 +178,7 @@ class Stalker(Thread):
 				notify('connection error, stopping now')
 				self.stop()
 				continue;
-			difference = list(set(files).difference(set(self.files_found_last_read))) 
+			difference = list(set(files.keys()).difference(set(self.files_found_last_read.keys()))) 
 			
 			
 			if difference:
@@ -182,15 +186,15 @@ class Stalker(Thread):
 					notify('i found new files for you, master')
 				self.menu.clean_files()
 				for element in files.keys():
-					self.menu.add_file(element)
+					self.menu.add_file(element, files[element])
 
 				self.files_found_last_time = files
 				
-				self.indicator.set_menu(self.menu.generate_menu(self.running, self.base, difference))
+				self.indicator.set_menu(self.menu.generate_menu(self.running, difference))
 				self.indicator.set_icon ('filestalker-new')
 	def stop(self):
 		self.running = False
-		self.indicator.set_menu(self.menu.generate_menu(self.running, self.base, []))
+		self.indicator.set_menu(self.menu.generate_menu(self.running, []))
 		self.indicator.set_icon ('filestalker-offline')
 
 		
@@ -198,7 +202,7 @@ class Stalker(Thread):
 		self.indicator.set_icon ('filestalker-idle')
 		self.files_found_last_read = self.files_found_last_time
 		
-	
+
 
 
 class Base:
@@ -232,6 +236,12 @@ class Base:
 			
 	def mark_as_read(self, widget = None):
 		self.stalker.mark_as_read()
+
+	def openfolder(self, folder):
+		os.system("xdg-open smb://"+self.config['server']['hostname'] +"/"+ self.config['server']['share']+"/"+folder)
+
+
+
 
 
 if __name__ == '__main__':
