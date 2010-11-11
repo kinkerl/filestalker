@@ -165,6 +165,7 @@ class Stalker(Thread):
 	def run (self):
 		print "start"
 		self.indicator.set_menu(self.menu.generate_menu(self.running, []))
+		self.indicator.set_icon ('filestalker-idle')
 		while self.running:
 			time.sleep(1)
 			if self.cnt < int(self.config['stalk']['refresh']):
