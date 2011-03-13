@@ -1,0 +1,8 @@
+[Desktop Entry]
+Categories=Utility;
+Comment=stalking files in samba
+Exec=filestalker
+GenericName=stalking files
+Icon=filestalker-idle
+Name=Filestalker
+Type=Application
